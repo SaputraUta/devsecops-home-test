@@ -1,0 +1,51 @@
+metadata:
+  id: "CKV2_ORDERS_1"
+  name: "Security groups may only accept 0.0.0.0/0 on port 443"
+  category: "NETWORKING"
+  severity: "CRITICAL"
+definition:
+  or:
+    - and:
+        - cond_type: attribute
+          resource_types: ["aws_security_group"]
+          attribute: "ingress.*.cidr_blocks"
+          operator: "not_contains"
+          value: "0.0.0.0/0"
+        - cond_type: attribute
+          resource_types: ["aws_security_group"]
+          attribute: "ingress.*.ipv6_cidr_blocks"
+          operator: "not_contains"
+          value: "::/0"
+    - and:
+        - cond_type: attribute
+          resource_types: ["aws_security_group"]
+          attribute: "ingress.*.from_port"
+          operator: "equals"
+          value: 443
+        - cond_type: attribute
+          resource_types: ["aws_security_group"]
+          attribute: "ingress.*.to_port"
+          operator: "equals"
+          value: 443
+    - and:
+        - cond_type: attribute
+          resource_types: ["aws_vpc_security_group_ingress_rule"]
+          attribute: "cidr_ipv4"
+          operator: "not_equals"
+          value: "0.0.0.0/0"
+        - cond_type: attribute
+          resource_types: ["aws_vpc_security_group_ingress_rule"]
+          attribute: "cidr_ipv6"
+          operator: "not_equals"
+          value: "::/0"
+    - and:
+        - cond_type: attribute
+          resource_types: ["aws_vpc_security_group_ingress_rule"]
+          attribute: "from_port"
+          operator: "equals"
+          value: 443
+        - cond_type: attribute
+          resource_types: ["aws_vpc_security_group_ingress_rule"]
+          attribute: "to_port"
+          operator: "equals"
+          value: 443

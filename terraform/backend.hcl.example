@@ -1,0 +1,6 @@
+bucket       = "<state-bucket-in-security-account>"
+key          = "orders-api/production/terraform.tfstate"
+region       = "ap-southeast-3"
+encrypt      = true
+kms_key_id   = "<state-kms-key-arn>"
+use_lockfile = true

@@ -1,4 +1,7 @@
 compact: true
 quiet: true
+external-checks-dir:
+  - security/checkov-policies
 skip-path:
   - app/Dockerfile.before
+  - security/examples

@@ -1,0 +1,9 @@
+terraform scan results:
+
+Passed checks: 183, Failed checks: 0, Skipped checks: 1
+
+dockerfile scan results:
+
+Passed checks: 8, Failed checks: 0, Skipped checks: 1
+
+
