@@ -32,6 +32,6 @@ Full numbers: `evidence/task4/scan-summary.md`.
 
 - **No shell means harder debugging.** `ECS Exec` has nothing to run. For an incident, run the same digest from the `:debug-nonroot` distroless variant in staging instead of adding a shell to prod.
 - **A digest pin doesn't update itself.** Without automation it goes stale, which is worse than a floating tag. Dependabot (`docker` ecosystem) opens the bump PR, and the pipeline scans it like any other change.
-- **The Docker `HEALTHCHECK` is for local runs only.** ECS ignores it. The task definition's `healthCheck` runs the same node command.
+- **No Docker `HEALTHCHECK`.** ECS ignores it, so the health check lives in the ALB target group and the ECS task definition. Trivy's DS-0026 (LOW) is accepted for that reason.
 
 Note: `.dockerignore` now allowlists only `package*.json` and `src/`, so a rebuild of `Dockerfile.before` would no longer copy `.env` in. The baseline numbers were captured before the allowlist existed.
