@@ -23,7 +23,9 @@ test('rejects a non-numeric order id', async () => {
   assert.strictEqual(res.status, 400);
 });
 
-test('does not advertise the framework', async () => {
+test('sends security headers and hides the framework', async () => {
   const res = await fetch(`${base}/health`);
   assert.strictEqual(res.headers.get('x-powered-by'), null);
+  assert.strictEqual(res.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(res.headers.get('content-security-policy'), /default-src 'none'/);
 });

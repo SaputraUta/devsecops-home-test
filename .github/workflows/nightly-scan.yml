@@ -1,0 +1,41 @@
+name: nightly-scan
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  rescan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: build and scan the current main image
+        run: |
+          docker build -t orders-api:nightly app
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work \
+            aquasec/trivy:0.76.1 image --quiet --scanners vuln --severity HIGH,CRITICAL \
+            --format json --output findings.json orders-api:nightly
+      - name: open or update one tracking issue per finding
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -r '.Results[]?.Vulnerabilities[]? | [.VulnerabilityID, .Severity, .PkgName, .InstalledVersion, (.FixedVersion // "no fix yet")] | @tsv' findings.json \
+          | sort -u | while IFS=$'\t' read -r id sev pkg ver fix; do
+              title="[$sev] $id in $pkg"
+              body="Package: $pkg $ver
+          Fixed in: $fix
+          Policy: security/vulnerability-policy.md (Critical 7 days, High 30 days)
+          Last seen: $(date -u +%F) by nightly-scan"
+              existing=$(gh issue list --state open --label vulnerability --search "\"$id\" in:title" --json number --jq '.[0].number')
+              if [ -n "$existing" ]; then
+                gh issue comment "$existing" --body "Still present on $(date -u +%F). Fixed in: $fix"
+              else
+                gh label create vulnerability --color B60205 2>/dev/null || true
+                gh issue create --title "$title" --label vulnerability --body "$body"
+              fi
+            done
