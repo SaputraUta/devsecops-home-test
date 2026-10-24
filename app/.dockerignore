@@ -1,5 +1,3 @@
-# Allowlist: only what the build needs gets into the build context.
-# Anything not listed (.env, .git, node_modules, test fixtures) can't be COPY'd.
 *
 !package.json
 !package-lock.json

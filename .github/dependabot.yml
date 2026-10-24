@@ -1,16 +1,13 @@
 version: 2
 updates:
-  # Bumps the sha256-pinned base images in app/Dockerfile
   - package-ecosystem: docker
     directory: /app
     schedule:
       interval: daily
-
   - package-ecosystem: npm
     directory: /app
     schedule:
       interval: weekly
-
   - package-ecosystem: github-actions
     directory: /
     schedule:

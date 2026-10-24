@@ -1,0 +1,19 @@
+vulnerabilities:
+  - id: CVE-2026-31789
+    statement: "32-bit only (image is x64); system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
+  - id: CVE-2026-28387
+    statement: "system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
+  - id: CVE-2026-28388
+    statement: "system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
+  - id: CVE-2026-28389
+    statement: "system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
+  - id: CVE-2026-28390
+    statement: "system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
+  - id: CVE-2026-45447
+    statement: "system libssl3 is not loaded by Node"
+    expired_at: 2026-11-07
