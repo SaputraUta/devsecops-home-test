@@ -86,8 +86,6 @@ resource "aws_cloudwatch_log_group" "flow" {
   kms_key_id        = aws_kms_key.app.arn
 }
 
-# ---------- VPC endpoints (no NAT gateway) ----------
-
 resource "aws_vpc_endpoint" "interface" {
   for_each            = toset(["ecr.api", "ecr.dkr", "secretsmanager", "logs"])
   vpc_id              = aws_vpc.main.id
@@ -104,8 +102,6 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = [aws_route_table.private.id]
 }
-
-# ---------- security groups: each tier only accepts the tier in front of it ----------
 
 resource "aws_security_group" "alb" {
   name        = "${local.name}-alb"

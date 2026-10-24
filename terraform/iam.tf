@@ -13,8 +13,6 @@ data "aws_iam_policy_document" "ecs_tasks_trust" {
   }
 }
 
-# ---------- task execution role: used by the ECS agent at container start ----------
-
 resource "aws_iam_role" "task_execution" {
   name               = "${local.name}-task-execution"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_trust.json
@@ -63,14 +61,10 @@ resource "aws_iam_role_policy" "task_execution" {
   policy = data.aws_iam_policy_document.task_execution.json
 }
 
-# ---------- task role: used by the app code. It makes no AWS calls today, so it has no policy ----------
-
 resource "aws_iam_role" "task" {
   name               = "${local.name}-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_trust.json
 }
-
-# ---------- deploy role: assumed by GitHub Actions through OIDC, no stored keys ----------
 
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
@@ -148,8 +142,6 @@ resource "aws_iam_role_policy" "deploy" {
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.deploy.json
 }
-
-# ---------- service roles for VPC flow logs and RDS enhanced monitoring ----------
 
 resource "aws_iam_role" "flow_logs" {
   name = "${local.name}-flow-logs"

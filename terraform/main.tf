@@ -32,8 +32,6 @@ locals {
   azs        = var.availability_zones
 }
 
-# ---------- encryption ----------
-
 resource "aws_kms_key" "app" {
   description         = "${local.name} RDS, secrets, logs and ECR"
   enable_key_rotation = true
@@ -73,8 +71,6 @@ resource "aws_cloudwatch_log_group" "app" {
   kms_key_id        = aws_kms_key.app.arn
 }
 
-# ---------- container registry ----------
-
 resource "aws_ecr_repository" "app" {
   name                 = local.name
   image_tag_mutability = "IMMUTABLE"
@@ -88,8 +84,6 @@ resource "aws_ecr_repository" "app" {
     kms_key         = aws_kms_key.app.arn
   }
 }
-
-# ---------- database ----------
 
 resource "aws_db_subnet_group" "db" {
   name       = local.name
@@ -149,8 +143,6 @@ resource "aws_db_instance" "db" {
   skip_final_snapshot       = false
   final_snapshot_identifier = "${local.name}-final"
 }
-
-# ---------- load balancer + WAF ----------
 
 resource "aws_lb" "app" {
   name                       = local.name
@@ -300,8 +292,6 @@ resource "aws_wafv2_web_acl_logging_configuration" "app" {
   resource_arn            = aws_wafv2_web_acl.app.arn
   log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
 }
-
-# ---------- ECS Fargate ----------
 
 resource "aws_ecs_cluster" "app" {
   name = local.name
