@@ -1,0 +1,16 @@
+# BASELINE ONLY. This is the common "it works" Dockerfile, kept to show what
+# the hardened Dockerfile fixes. Do not ship it.
+# - full Debian image with compilers, curl, git and a shell
+# - floating tag, so the build changes under you
+# - runs as root
+# - `COPY . .` with no .dockerignore pulls in .env, .git, node_modules
+# - npm install ignores the lockfile and installs devDependencies
+FROM node:22
+
+WORKDIR /app
+COPY . .
+RUN npm install
+
+ENV DB_PASSWORD=changeme
+EXPOSE 8080
+CMD ["npm", "start"]

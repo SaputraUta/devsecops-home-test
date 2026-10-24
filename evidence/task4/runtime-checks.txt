@@ -1,0 +1,28 @@
+## 1. Starts without the secret? (expect refusal)
+DB_PASSWORD is not set; refusing to start
+exit=1
+
+## 2. Starts with the secret injected at run time (as ECS does)
+{"status":"ok"}
+
+## 3. Runs as which user?
+Config.User=65532:65532
+uid 65532 gid 65532
+
+## 4. Is there a shell or package manager?
+sh: absent
+bash: absent
+apt: absent
+npm: absent
+curl: absent
+wget: absent
+
+## 5. Can the app user write its own code?
+denied: EACCES
+
+## 6. Secret in any image layer or image config?
+history lines mentioning password: 0
+image env: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt","NODE_ENV=production","PORT=8080"]
+
+## 7. Docker healthcheck status (first check runs after 30s interval)
+healthy

@@ -1,0 +1,17 @@
+{
+  "name": "orders-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal backend used to demonstrate container and pipeline security controls",
+  "main": "src/server.js",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "5.3.0"
+  }
+}
