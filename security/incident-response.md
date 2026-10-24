@@ -5,7 +5,7 @@
 1. I check the finding first. Is the package really in the image, and is our version really affected?
 2. I check if it matters for us. Does the app actually use that library? Is the service reachable from the internet?
 3. I look for a patched base image. If there is one, we bump it, rebuild and rescan. That's usually quicker than any discussion.
-4. If there's no patch yet, I look at other options: a different base image, or reducing exposure (WAF rule, tighter network access) until the patch comes out.
+4. If there's no patch yet, I check whether our existing controls (WAF rules, network rules) already block the known exploit. If they don't, I add a rule for it, or move to a base image that isn't affected.
 5. The app working fine doesn't change the decision. Vulnerabilities usually don't break anything until someone uses them.
 6. If we can show it can't be exploited here, it can ship with an exception: written evidence, an owner, an expiry date, and approval from the security lead, not from the team that wants to ship. When it expires the pipeline blocks again.
 7. If it can be exploited and there's no fix or workaround, the release waits.
@@ -27,14 +27,16 @@ This happened in this repo. Trivy found a Critical in `libssl3` inside the distr
 
 ## Scenario C: CloudTrail shows unexpected API calls from the pipeline's IAM principal
 
-Contain first, then investigate.
+**First, check if it's expected**
+1. Find who owns the role, a team or a person, and ask them right away: did they run this, and did they expect it? A new deploy step or a manual run can explain it.
+2. If they can explain it, I confirm with the run logs and close it. If nobody can, I treat it as a compromise.
 
-**Containment**
-1. Stop the principal from doing more. If it's an access key, deactivate it (don't delete it, it's evidence). If it's a role, revoke its active sessions, which adds a deny for every session issued before now.
+**Contain**
+1. Stop the principal from doing more. If it's an access key, deactivate it (don't delete it, it's evidence). If it's a role, revoke its active sessions.
 2. Pause deployments so the pipeline can't get new credentials while we look.
 3. If the calls created anything (new users, keys, roles, resources), disable those too.
 
-**Investigation**
+**Investigate**
 1. Keep the evidence safe. CloudTrail should go to a separate log account where prod admins can't delete it.
 2. List everything that principal did in the time window: which API calls, which regions, from which IP.
 3. Look for signs of persistence first: new IAM users, access keys, roles, or changed policies. Then look for data access, like secrets or S3 reads.
