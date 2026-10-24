@@ -28,7 +28,7 @@ Each entry: what we picked, what we rejected, and why.
 - The security account holds the org CloudTrail and the log archive bucket (Object Lock). An attacker with prod admin can't delete it.
 - Staging is a scaled-down copy and the DAST target, so security testing never touches prod.
 - At larger scale, split security into log-archive and security-tooling accounts (the AWS Control Tower default).
-- Only prod is built in Terraform. The other two accounts are documented, not built.
+- The workload Terraform covers staging and production (one state and one account each). The security account is documented, not built.
 
 ## Log bucket encryption: SSE-S3
 - Forced: ALB access logs don't support SSE-KMS.
