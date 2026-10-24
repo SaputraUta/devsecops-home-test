@@ -66,9 +66,9 @@ jobs:
       - name: trivy fs (dependencies from the lockfile)
         run: |
           mkdir -p "$REPORTS"
-          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" fs --quiet \
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --quiet \
             --scanners vuln --format table --output "$REPORTS"/sca.txt app
-          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" fs --quiet \
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --quiet \
             --scanners vuln --severity HIGH,CRITICAL --exit-code 1 app
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -105,7 +105,7 @@ jobs:
       - name: checkov (terraform + dockerfile)
         run: |
           mkdir -p "$REPORTS"
-          docker run --rm -v "$PWD:/work" -w /work bridgecrew/checkov:3.3.30 \
+          docker run --rm -v "$PWD:/src" -w /src bridgecrew/checkov:3.3.30 \
             --config-file .checkov.yaml -d . --framework terraform dockerfile \
             --output cli --output junitxml --output-file-path "console,$REPORTS"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -139,17 +139,17 @@ jobs:
       - name: full report
         run: |
           mkdir -p "$REPORTS"
-          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" image --quiet --input image.tar \
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" image --quiet --input image.tar \
             --scanners vuln,secret --image-config-scanners misconfig,secret \
             --ignorefile .trivyignore.yaml --format table --output "$REPORTS"/trivy-image.txt
       - name: "gate: any Critical"
         run: |
-          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" image --quiet --input image.tar \
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" image --quiet --input image.tar \
             --scanners vuln,secret --ignorefile .trivyignore.yaml \
             --severity CRITICAL --exit-code 1
       - name: "gate: High with a fix available"
         run: |
-          docker run --rm -v "$PWD:/work" -w /work "$TRIVY_IMAGE" image --quiet --input image.tar \
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" image --quiet --input image.tar \
             --scanners vuln --ignorefile .trivyignore.yaml \
             --severity HIGH --ignore-unfixed --exit-code 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

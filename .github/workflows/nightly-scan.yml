@@ -17,9 +17,9 @@ jobs:
       - name: build and scan the current main image
         run: |
           docker build -t orders-api:nightly app
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work \
-            aquasec/trivy:0.76.1 image --quiet --scanners vuln --severity HIGH,CRITICAL \
-            --format json --output findings.json orders-api:nightly
+          docker save orders-api:nightly -o image.tar
+          docker run --rm -v "$PWD:/src" -w /src aquasec/trivy:0.76.1 image --quiet --input image.tar \
+            --scanners vuln --severity HIGH,CRITICAL --format json --output findings.json
       - name: open or update one tracking issue per finding
         env:
           GH_TOKEN: ${{ github.token }}
