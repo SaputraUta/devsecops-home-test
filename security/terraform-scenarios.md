@@ -12,7 +12,7 @@ The Terraform in `terraform/` builds the Task 1 design for one environment at a 
 | Environment separation | One account and one state file per environment |
 | IaC scanning | Checkov on every PR, plus one custom policy |
 
-Results: `terraform validate` passes. Checkov: 183 passed, 0 failed, 1 skipped (Multi-AZ is off in staging to save cost). Files in `evidence/task3/`.
+Results: `terraform validate` passes. Checkov: 212 passed, 0 failed, 1 skipped (Multi-AZ is off in staging to save cost). Files in `evidence/task3/`.
 
 ## Scenario A: `"Action": "*", "Resource": "*"`
 

@@ -252,6 +252,25 @@ resource "aws_wafv2_web_acl" "app" {
   }
 
   rule {
+    name     = "AWSManagedRulesAnonymousIpList"
+    priority = 4
+    override_action {
+      none {}
+    }
+    statement {
+      managed_rule_group_statement {
+        vendor_name = "AWS"
+        name        = "AWSManagedRulesAnonymousIpList"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      sampled_requests_enabled   = true
+      metric_name                = "AWSManagedRulesAnonymousIpList"
+    }
+  }
+
+  rule {
     name     = "rate-limit-per-ip"
     priority = 10
     action {

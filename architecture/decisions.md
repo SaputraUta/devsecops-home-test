@@ -70,7 +70,7 @@ Each entry: what we picked, what we rejected, and why.
 | # | Risk | Mitigation |
 |---|---|---|
 | 1 | DB or app reachable from the internet | Only the ALB is public. App and DB sit in private/isolated subnets, and each SG allows only the tier in front of it. |
-| 2 | Web attacks on the public ALB (SQL injection, bots, floods) | WAF with AWS managed rules plus rate limiting |
+| 2 | Web attacks on the public ALB (SQL injection, bots, floods) | WAF with AWS managed rules (common, known bad inputs, SQLi, anonymous IPs) plus rate limiting |
 | 3 | A role with too much power | Three single-purpose roles. The deploy role can only pass the two task roles. |
 | 4 | Secret leaked from code or image | Secrets Manager + KMS. Config holds only the ARN, and the value is injected at start. |
 | 5 | Stolen disk, snapshot or backup | RDS and secrets encrypted with a customer-managed KMS key, plus TLS in transit |

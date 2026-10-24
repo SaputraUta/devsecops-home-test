@@ -1,9 +1,10 @@
-terraform scan results:
-
-Passed checks: 183, Failed checks: 0, Skipped checks: 1
-
+2026-10-24 08:58:59,301 [MainThread  ] [WARNI]  Failed to find context for resource.aws_vpc_endpoint.interface["ecr.dkr"]
 dockerfile scan results:
 
-Passed checks: 8, Failed checks: 0, Skipped checks: 1
+Passed checks: 30, Failed checks: 0, Skipped checks: 1
+
+terraform scan results:
+
+Passed checks: 212, Failed checks: 0, Skipped checks: 1
 
 

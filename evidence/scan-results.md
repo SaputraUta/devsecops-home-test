@@ -7,7 +7,7 @@
 | libssl3 reachability | Not loaded by the Node process | `task4/libssl-reachability.txt` |
 | Runtime checks | uid 65532, no shell/npm/curl, code not writable, no secret in layers | `task4/runtime-checks.txt` |
 | Terraform validate | Valid | `task3/terraform-validate.txt` |
-| Checkov, repo Terraform + Dockerfile | 183 passed, 0 failed, 1 skipped (Multi-AZ, reason inline) | `task3/checkov-terraform.txt` |
+| Checkov, repo Terraform + Dockerfile | 212 passed, 0 failed, 1 skipped (Multi-AZ, reason inline) | `task3/checkov-terraform.txt` |
 | Checkov, Scenario B public database | 10 failed, including `CKV_AWS_17`, `CKV_AWS_16`, `CKV2_ORDERS_1` | `task3/checkov-scenario-b-public-db.txt` |
 | Pipeline on `main` | All gates green, production paused for approval, approved, simulated deploy | `task2/01` to `04` |
 | Pipeline on a bad PR | `sca` failed (lodash CVE-2021-23337), `secrets` failed (hardcoded key), build skipped | `task2/05` to `07` |

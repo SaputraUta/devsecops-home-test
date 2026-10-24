@@ -141,7 +141,7 @@ Pipeline hardening: workflow token is `contents: read` by default and each job a
 | Green pipeline run, production waiting for approval, then approved | `evidence/task2/01` to `04` |
 | PR with a vulnerable dependency and a hardcoded key, blocked by SCA and Gitleaks | `evidence/task2/05` to `07` |
 | Terraform validate | `evidence/task3/terraform-validate.txt` |
-| Checkov on the real Terraform: 183 passed, 0 failed, 1 skipped with a reason | `evidence/task3/checkov-terraform.txt` |
+| Checkov on the real Terraform: 212 passed, 0 failed, 1 skipped with a reason | `evidence/task3/checkov-terraform.txt` |
 | Checkov on a deliberately public database: 10 failed, including the custom policy | `evidence/task3/checkov-scenario-b-public-db.txt` |
 | Trivy before/after hardening | `evidence/task4/scan-summary.md`, `trivy-before-critical.txt`, `trivy-after.txt` |
 | Runtime checks: non-root, no shell, read-only code, no secret in the image | `evidence/task4/runtime-checks.txt` |
