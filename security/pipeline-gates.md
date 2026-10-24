@@ -1,65 +1,62 @@
-# Task 2: CI/CD security pipeline
+# CI/CD security pipeline
 
-Pipeline: `.github/workflows/pipeline.yml` (GitHub Actions). Runs on every pull request to `main` and every push to `main`.
+Pipeline: `.github/workflows/pipeline.yml`. It runs on every PR to `main` and every push to `main`.
 
 ```
-validate · sast · sca · secrets · iac        (parallel, all must pass)
+validate · sast · sca · secrets · iac          run in parallel, all must pass
         ↓
-build  →  image.tar
+build → image.tar
         ↓
-container-scan · dast                         (parallel, on the same image.tar)
+container-scan · dast                           both test the same image.tar
         ↓  push to main only
-publish  →  deploy-staging  →  deploy-production (required reviewer)
+publish → deploy-staging → deploy-production    production needs approval
 ```
 
 ## Security gates
 
-| # | Stage | Tool | What it checks | Fails the pipeline when |
-|---|---|---|---|---|
-| 1 | Source validation | `npm test`, `terraform fmt -check`, `terraform validate` | Unit tests, Terraform formatting and syntax | Any test or check fails |
-| 2 | SAST | Semgrep (`p/owasp-top-ten`, `p/nodejs`, `p/secrets`) | Insecure code patterns in `app/` | Any finding (`--error`) |
-| 3 | SCA | Trivy `fs` | Known CVEs in dependencies from `package-lock.json` | Any High or Critical |
-| 4 | Secret scanning | Gitleaks | Secrets in every commit of the git history | Any finding |
-| 5 | IaC scanning | Checkov | Terraform and Dockerfile misconfigurations | Any failed check that isn't skipped with a reason |
-| 6 | Image build | Docker | Builds once, tagged with the commit SHA, saved as an artifact | Build error |
-| 7 | Container scanning | Trivy `image` | OS packages, npm packages, secrets and misconfig inside the built image | Any Critical, or any High with a fix available |
-| 8 | DAST | OWASP ZAP baseline | Passive checks against the running container: headers, information leaks, cookies | Any WARN or FAIL |
-| 9 | Deployment approval | GitHub Environment `production` | A named reviewer must approve; only `main` can deploy | Not approved |
+| Stage | Tool | Fails when |
+|---|---|---|
+| Source validation | `npm test`, `terraform fmt` and `validate` | A test or check fails |
+| SAST | Semgrep (OWASP Top 10, Node.js, secrets rules) | Any finding |
+| SCA | Trivy on `package-lock.json` | Any High or Critical |
+| Secret scanning | Gitleaks on the full git history | Any secret |
+| IaC scanning | Checkov on Terraform and the Dockerfile, plus a custom rule | Any failed check without a written reason |
+| Image build | Docker | Build error |
+| Container scanning | Trivy on the built image | Any Critical, or a High that has a fix |
+| DAST | ZAP baseline against the running container | Any warning |
+| Deployment approval | GitHub Environment `production` | Nobody approves |
 
-SonarQube is the suggested SAST tool. Semgrep is used instead because it needs no server, and the gate logic is the same: a finding fails the build.
+SonarQube is the suggested SAST tool. I used Semgrep because it doesn't need a server, and it blocks the build the same way.
 
-Lower severities don't block. They're handled by `security/vulnerability-policy.md`: Medium within 90 days, Low at the next base-image bump. The nightly workflow (`.github/workflows/nightly-scan.yml`) rescans `main` and opens or updates one GitHub issue per High and Critical finding, so tracking isn't left to memory.
+Medium and Low findings don't block. They follow `security/vulnerability-policy.md`, and a nightly job (`nightly-scan.yml`) rescans `main` and opens a GitHub issue for every High or Critical so they get tracked.
 
-## Design choices behind the gates
+## Other choices
 
-- **Scan what you ship.** `publish` pushes the exact `image.tar` that `container-scan` and `dast` tested. Nothing is rebuilt after scanning.
-- **Scans run on PRs, publishing doesn't.** Unmerged code is scanned but never pushed or deployed.
-- **No stored cloud credentials.** Deploy jobs get an OIDC token (`id-token: write`) and assume a role whose trust policy only accepts this repo and that GitHub Environment. A staging token can't assume the production role.
-- **Least privilege per job.** The workflow default is `contents: read`. Only `publish` gets `packages: write`, only the deploy jobs get `id-token: write`, and only the nightly scan gets `issues: write`.
-- **Pinned supply chain.** Every action is pinned to a commit SHA, every tool image to a version, and the Gitleaks binary is checked against its published SHA-256. Dependabot opens PRs to bump them.
-- **Secrets stay out of logs.** Gitleaks runs with `--redact`, registry logins use `--password-stdin`, and the app never logs `process.env`. The only value passed in CI is a dummy `DB_PASSWORD` for the DAST container.
+- The image that gets published is the exact file that was scanned. Nothing is rebuilt after scanning.
+- PRs get scanned but never published or deployed.
+- No cloud keys are stored in GitHub. Deploy jobs get short-lived AWS credentials through OIDC.
+- Each job only gets the permissions it needs. The default is read-only.
+- Every action is pinned to a commit SHA, and the Gitleaks download is checked against its published checksum. Dependabot keeps them updated.
+- Secrets don't reach the logs: Gitleaks redacts its output, registry logins read the password from stdin, and the app never logs its environment.
 
 ## False positives and accepted risks
 
-A finding is never silenced by editing the pipeline. Every suppression lives in a reviewed file, in the repo, with a reason:
+Findings are never silenced by editing the pipeline. Every exception lives in a file in the repo, with a reason, and goes through a PR:
 
-| Tool | Where | Format |
-|---|---|---|
-| Trivy | `.trivyignore.yaml` | CVE id, `statement` (the evidence), `expired_at` |
-| Checkov | Inline `# checkov:skip=<ID>:<reason>` on the resource | Reason required |
-| Semgrep | `# nosemgrep: <rule-id>` on the line | Reason in the PR |
-| Gitleaks | `.gitleaksignore` (finding fingerprint) | Only for test fixtures |
-| ZAP | `rules.tsv` with `IGNORE` | Reason in the PR |
+| Tool | Where |
+|---|---|
+| Trivy | `.trivyignore.yaml`, with a reason and an expiry date |
+| Checkov | `# checkov:skip=<ID>:<reason>` on the resource |
+| Semgrep | `# nosemgrep` on the line, with the reason in the PR |
+| Gitleaks | `.gitleaksignore`, for test fixtures only |
+| ZAP | a rules file, with the reason in the PR |
 
-Two kinds of entries go there:
+A false positive (the tool is wrong) needs one reviewer. An accepted risk (the finding is real but can't be exploited here) needs the full exception process in the vulnerability policy: evidence, an owner, approval from the security lead, and an expiry date.
 
-- **False positive:** the finding is wrong, for example a test fixture that looks like a key. One reviewer is enough.
-- **Accepted risk:** the finding is real but not exploitable here, or has a compensating control. That needs the full exception process in `security/vulnerability-policy.md`: evidence, owner, an approver who isn't the requester, and an expiry. When it expires, the gate blocks again.
-
-Live example: `.trivyignore.yaml` holds 6 libssl3 CVEs from the distroless base image, expiring 2026-11-07. The evidence that Node never loads that library is in `evidence/task4/libssl-reachability.txt`.
+Example: `.trivyignore.yaml` has 6 `libssl3` CVEs from the base image, expiring 2026-11-07. Proof that Node never loads that library: `evidence/task4/libssl-reachability.txt`.
 
 ## Evidence
 
-- Green run with every gate passing and production waiting for approval: `evidence/task2/01-*.webp` to `04-*.webp`
-- A PR that adds a vulnerable dependency and a hardcoded key, blocked by the SCA and secrets gates: `evidence/task2/05-*.webp`
-- Scan reports for every run are downloadable as workflow artifacts (`sast-report`, `sca-report`, `secrets-report`, `iac-report`, `container-scan-report`, `dast-report`)
+- Green run, production waiting for approval, then approved: `evidence/task2/01` to `04`
+- A PR with a vulnerable library and a hardcoded key, blocked by SCA and Gitleaks: `evidence/task2/05` to `07`
+- Every run's scan reports are downloadable as artifacts in the Actions tab

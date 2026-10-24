@@ -1,37 +1,30 @@
-# Task 4: Container and application security
+# Container and application security
 
-App: `app/`, a minimal Express API (`/health`, `/api/orders/:id`). Image: `app/Dockerfile`.
-`app/Dockerfile.before` is the naive version, kept only as the baseline for comparison.
+The app is in `app/`, a small Express API. The image is built from `app/Dockerfile`. `app/Dockerfile.before` is the usual "it works" version, kept only to compare against.
 
-## Result
-
-| | Before | Hardened |
+| | Before | After |
 |---|---|---|
-| Base | `node:22` (full Debian, floating tag) | distroless `nodejs22-debian12:nonroot`, pinned by digest |
+| Base image | `node:22` (full Debian) | distroless `nodejs22-debian12:nonroot`, pinned by digest |
 | Size | 410 MB | 53 MB |
-| Critical / High CVEs | 30 / 626 | 1 / 6 (one package, not loaded; see policy) |
-| User | root | uid 65532 |
-| Shell, npm, apt, curl | all present | none |
-| Secret in image | `ENV DB_PASSWORD` (Trivy DS-0031 CRITICAL) | none |
+| Critical / High CVEs | 30 / 626 | 1 / 6 (one library the app never loads) |
+| Runs as | root | uid 65532 |
+| Shell, npm, curl | yes | none |
+| Password in image | yes (`ENV DB_PASSWORD`) | no |
 
-Full numbers: `evidence/task4/scan-summary.md`.
-
-## Requirement → how → evidence
+## Requirements
 
 | Requirement | How | Evidence |
 |---|---|---|
-| Minimal, trusted base image | Google distroless, chosen after scanning 4 candidates (slim, alpine, distroless, Chainguard). Alpine's High findings were mostly npm itself. Chainguard's free tier can't hold Node 22 | `scan-summary.md` |
-| Non-root | `USER 65532:65532`, numeric so the runtime can verify it. App code is owned by root, so the process can't rewrite it | `runtime-checks.txt` §3, §5 |
-| No unnecessary packages or tools | Multi-stage: npm and the build toolchain stay in the build stage. The runtime has no shell, so `docker exec sh` fails and an attacker has no tools to work with | `runtime-checks.txt` §4 |
-| Dependency version control | Exact version in `package.json`, `package-lock.json` committed, `npm ci` installs only what the lock says, `--omit=dev --ignore-scripts`. Both base images pinned by `sha256` digest | `app/Dockerfile` |
-| Container vulnerability scanning | Trivy: OS and npm packages, secrets, image misconfig. Same scan runs as a gate in the pipeline (Task 2) | `trivy-before-critical.txt`, `trivy-after.txt` |
-| Secure configuration | `DB_PASSWORD` is injected at container start, by ECS from Secrets Manager in AWS (Task 1). The app refuses to start without it and never logs it | `runtime-checks.txt` §1, §2 |
-| No secrets in layers | Allowlist `.dockerignore`, so `.env` and `.git` can't enter the build context. No secret in `ENV`/`ARG`. Checked with `docker history`, image config, and Trivy's secret scanner | `runtime-checks.txt` §6 |
+| Minimal, trusted base | Google distroless. I scanned 4 options: slim had 67 High, Alpine still ships npm (11 High), Chainguard's free tier can't pin Node 22 | `evidence/task4/scan-summary.md` |
+| Non-root | `USER 65532`. App files are owned by root, so the app can't change its own code | `evidence/task4/runtime-checks.txt` |
+| No extra tools | Two-stage build. npm stays in the build stage, the final image has no shell or package manager | `runtime-checks.txt` |
+| Version control | Exact version in `package.json`, committed lockfile, `npm ci`. Base images pinned by digest, updated by Dependabot | `app/Dockerfile` |
+| Vulnerability scanning | Trivy before and after, and as a gate in the pipeline | `evidence/task4/trivy-*.txt` |
+| Secure config | `DB_PASSWORD` comes from an environment variable, set by ECS from Secrets Manager. The app won't start without it | `runtime-checks.txt` |
+| No secrets in layers | `.dockerignore` only lets in `package.json`, the lockfile and `src/`, so `.env` can't get copied. Checked with `docker history` and Trivy | `runtime-checks.txt` |
 
-## Trade-offs accepted
+## Trade-offs
 
-- **No shell means harder debugging.** `ECS Exec` has nothing to run. For an incident, run the same digest from the `:debug-nonroot` distroless variant in staging instead of adding a shell to prod.
-- **A digest pin doesn't update itself.** Without automation it goes stale, which is worse than a floating tag. Dependabot (`docker` ecosystem) opens the bump PR, and the pipeline scans it like any other change.
-- **No Docker `HEALTHCHECK`.** ECS ignores it, so the health check lives in the ALB target group and the ECS task definition. Trivy's DS-0026 (LOW) is accepted for that reason.
-
-Note: `.dockerignore` now allowlists only `package*.json` and `src/`, so a rebuild of `Dockerfile.before` would no longer copy `.env` in. The baseline numbers were captured before the allowlist existed.
+- No shell makes debugging harder. For an incident, run the distroless `:debug` variant of the same image in staging.
+- A pinned digest doesn't update itself. Dependabot opens the PR when a new image comes out.
+- There's no Docker `HEALTHCHECK`, because ECS ignores it. The health check is in the ALB and the ECS task definition.
